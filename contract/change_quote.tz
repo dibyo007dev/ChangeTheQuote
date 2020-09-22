@@ -1,0 +1,73 @@
+parameter (pair (key %newOwner) (pair (string %newQuote) (signature %userSignature)));
+storage   (pair (string %currentQuote) (pair (int %nonce) (key %owner)));
+code
+  {
+    DUP;        # pair @parameter @storage : pair @parameter @storage
+    CDR;        # @storage : pair @parameter @storage
+    SWAP;       # pair @parameter @storage : @storage
+    CAR;        # @parameter : @storage
+    # == changeQuote ==
+    # sp.verify(sp.check_signature(params.newOwner, params.userSignature, sp.pack(sp.record(c = self.data.nonce, n = params.newQuote, o = params.newOwner)))) # @parameter : @storage
+    DUP;        # @parameter : @parameter : @storage
+    CAR;        # key : @parameter : @storage
+    SWAP;       # @parameter : key : @storage
+    DUP;        # @parameter : @parameter : key : @storage
+    DUG 2;      # @parameter : key : @parameter : @storage
+    CDAR;       # string : key : @parameter : @storage
+    PAIR %n %o; # pair (string %n) (key %o) : @parameter : @storage
+    DIG 2;      # @storage : pair (string %n) (key %o) : @parameter
+    DUP;        # @storage : @storage : pair (string %n) (key %o) : @parameter
+    DUG 3;      # @storage : pair (string %n) (key %o) : @parameter : @storage
+    CDAR;       # int : pair (string %n) (key %o) : @parameter : @storage
+    PAIR %c;    # pair (int %c) (pair (string %n) (key %o)) : @parameter : @storage
+    PACK;       # bytes : @parameter : @storage
+    SWAP;       # @parameter : bytes : @storage
+    DUP;        # @parameter : @parameter : bytes : @storage
+    CDDR;       # signature : @parameter : bytes : @storage
+    SWAP;       # @parameter : signature : bytes : @storage
+    DUP;        # @parameter : @parameter : signature : bytes : @storage
+    DUG 3;      # @parameter : signature : bytes : @parameter : @storage
+    CAR;        # key : signature : bytes : @parameter : @storage
+    CHECK_SIGNATURE; # bool : @parameter : @storage
+    IF
+      {}
+      {
+        PUSH string "WrongCondition: sp.check_signature(params.newOwner, params.userSignature, sp.pack(sp.record(c = self.data.nonce, n = params.newQuote, o = params.newOwner)))"; # string : @parameter : @storage
+        FAILWITH;   # FAILED
+      }; # @parameter : @storage
+    SWAP;       # @storage : @parameter
+    # self.data.currentQuote = params.newQuote # @storage : @parameter
+    CDR;        # pair (int %nonce) (key %owner) : @parameter
+    SWAP;       # @parameter : pair (int %nonce) (key %owner)
+    DUP;        # @parameter : @parameter : pair (int %nonce) (key %owner)
+    DUG 2;      # @parameter : pair (int %nonce) (key %owner) : @parameter
+    CDAR;       # string : pair (int %nonce) (key %owner) : @parameter
+    PAIR;       # pair string (pair (int %nonce) (key %owner)) : @parameter
+    # self.data.owner = params.newOwner # pair string (pair (int %nonce) (key %owner)) : @parameter
+    DUP;        # pair string (pair (int %nonce) (key %owner)) : pair string (pair (int %nonce) (key %owner)) : @parameter
+    CAR;        # string : pair string (pair (int %nonce) (key %owner)) : @parameter
+    SWAP;       # pair string (pair (int %nonce) (key %owner)) : string : @parameter
+    CDAR;       # int : string : @parameter
+    DIG 2;      # @parameter : int : string
+    CAR;        # key : int : string
+    SWAP;       # int : key : string
+    PAIR;       # pair int key : string
+    SWAP;       # string : pair int key
+    PAIR;       # pair string (pair int key)
+    # self.data.nonce += 1 # pair string (pair int key)
+    DUP;        # pair string (pair int key) : pair string (pair int key)
+    CAR;        # string : pair string (pair int key)
+    SWAP;       # pair string (pair int key) : string
+    CDR;        # pair int key : string
+    DUP;        # pair int key : pair int key : string
+    CDR;        # key : pair int key : string
+    SWAP;       # pair int key : key : string
+    CAR;        # int : key : string
+    PUSH int 1; # int : int : key : string
+    ADD;        # int : key : string
+    PAIR;       # pair int key : string
+    SWAP;       # string : pair int key
+    PAIR;       # pair string (pair int key)
+    NIL operation; # list operation : pair string (pair int key)
+    PAIR;       # pair (list operation) (pair string (pair int key))
+  };
